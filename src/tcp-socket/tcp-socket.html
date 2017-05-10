@@ -1,0 +1,96 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<!--<link rel="import" href="../../bower_components/polymer/lib/elements/dom-if.html">-->
+<!--<link rel="import" href="../../bower_components/polymer/lib/elements/dom-repeat.html">-->
+
+<dom-module id="tcp-socket">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      .socket {
+        border: 1px solid black;
+        display: inline-block;
+      }
+    </style>
+    <div class="socket">
+      State is [[ getDisplayState(currentState) ]]
+    </div>
+  </template>
+
+  <script>
+    /** @polymerElement */
+    class TcpSocket extends Polymer.Element {
+      static get is() { return 'tcp-socket'; }
+      static get properties() {
+        return {
+          currentState: {
+            type: String,
+            value: 'closed'
+          },
+          _stateMachine: {
+            type: Object
+          },
+          _stateMap: {
+            type: Object,
+            value: {
+              closed: 'CLOSED',
+              listen: 'LISTEN',
+              synsent: 'SYN-SENT',
+              synreceived: 'SYN-RECEIVED',
+              established: 'ESTABLISHED',
+              finwait1: 'FIN-WAIT-1',
+              finwait2: 'FIN-WAIT-2',
+              closing: 'CLOSING',
+              closewait: 'CLOSE-WAIT',
+              lastack: 'LAST-ACK',
+              timewait: 'TIME-WAIT',
+            }
+          }
+        };
+      }
+
+      constructor() {
+        super();
+        this._stateMachine = StateMachine.create({
+          initial: this.currentState,
+          events: [
+            { name: 'passiveOpen', from: 'closed', to: 'listen'},
+            { name: 'activeOpen', from: 'closed', to: 'synsent'},
+            { name: 'syn', from: 'listen', to: 'synreceived'},
+            { name: 'syn', from: 'synsent', to: 'synreceived'},
+            { name: 'synack', from: 'synsent', to: 'established'},
+            { name: 'ack', from: 'synreceived', to: 'established'},
+          ]
+        });
+        // Set new state
+        this._stateMachine.onafterevent = (name, fromState, toState) => {
+          this.currentState = toState;
+        };
+
+        // Set up state change events
+        this._stateMachine.onafteractiveOpen = () => this.sendSegment({ syn: true });
+        this._stateMachine.onaftersyn = (event, from, to) => {
+          if (from === 'listen') {
+            this.sendSegment({ syn: true, ack: true })
+          }
+          if (from === 'synsent') { // Simultaneous Open
+            this.sendSegment({ ack: true })
+          }
+        };
+        this._stateMachine.onaftersynack = () => this.sendSegment({ ack: true });
+        this._stateMachine.onleavelisten = () => this.sendSegment({ syn: true, ack: true });
+      }
+
+      getDisplayState(state) {
+        return this._stateMap[state];
+      }
+
+      sendSegment(detail) {
+        this.dispatchEvent(new Event('send-segment'), { detail });
+      }
+    }
+
+    window.customElements.define(TcpSocket.is, TcpSocket);
+  </script>
+</dom-module>

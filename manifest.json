@@ -1,0 +1,7 @@
+{
+  "name": "tcp-connection-demo",
+  "short_name": "tcp-connection-demo",
+  "description": "An applicaiton which shows how a TCP connection works",
+  "start_url": "/",
+  "display": "standalone"
+}

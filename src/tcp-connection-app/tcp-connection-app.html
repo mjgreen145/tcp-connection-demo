@@ -1,0 +1,42 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<!--<link rel="import" href="../../bower_components/polymer/lib/elements/dom-if.html">-->
+<!--<link rel="import" href="../../bower_components/polymer/lib/elements/dom-repeat.html">-->
+<link rel="import" href="../tcp-socket/tcp-socket.html">
+
+<dom-module id="tcp-connection-app">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+    <tcp-socket id="socket-1" on-send-segment='_onSegmentFromSocket1'></tcp-socket>
+    <tcp-socket id="socket-2" on-send-segment='_onSegmentFromSocket2'></tcp-socket>
+  </template>
+
+  <script>
+    /** @polymerElement */
+    class TcpConnectionApp extends Polymer.Element {
+      static get is() { return 'tcp-connection-app'; }
+      static get properties() {
+        return {
+          socket1: {
+            type: Object
+          },
+          socket2: {
+            type: Object
+          }
+        };
+      }
+
+      _onSegmentFromSocket1() {
+        console.log('blah1');
+      }
+      _onSegmentFromSocket2() {
+        console.log('blah2');
+      }
+    }
+
+    window.customElements.define(TcpConnectionApp.is, TcpConnectionApp);
+  </script>
+</dom-module>
