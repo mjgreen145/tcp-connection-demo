@@ -60,11 +60,14 @@
           initial: this.currentState,
           events: [
             { name: 'listen', from: 'closed', to: 'listen'},
-            { name: 'activeOpen', from: 'closed', to: 'synsent'},
+            { name: 'close', from: 'listen', to: 'closed'},
+            { name: 'open', from: 'closed', to: 'synsent'},
+            { name: 'close', from: 'synsent', to: 'closed'},
             { name: 'syn', from: 'listen', to: 'synreceived'},
             { name: 'syn', from: 'synsent', to: 'synreceived'},
             { name: 'synack', from: 'synsent', to: 'established'},
             { name: 'ack', from: 'synreceived', to: 'established'},
+            // { name: 'close', from: 'established', to: 'finwait1'},
           ]
         });
         // Set new state
@@ -73,7 +76,7 @@
         };
 
         // Set up state change events
-        this._stateMachine.onafteractiveOpen = () => this.sendSegment({ syn: true });
+        this._stateMachine.onafteropen = () => this.sendSegment({ syn: true });
         this._stateMachine.onaftersyn = (event, from, to) => {
           if (from === 'listen') {
             this.sendSegment({ syn: true, ack: true })
@@ -91,6 +94,14 @@
 
       listen() {
         this._stateMachine.listen();
+      }
+
+      open() {
+        this._stateMachine.open();
+      }
+
+      close() {
+        this._stateMachine.close();
       }
 
       sendSegment(detail) {
