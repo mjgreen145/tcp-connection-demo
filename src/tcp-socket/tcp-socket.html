@@ -46,6 +46,10 @@
               lastack: 'LAST-ACK',
               timewait: 'TIME-WAIT',
             }
+          },
+          packet: {
+            type: Object,
+            observer: '_handlePacket'
           }
         };
       }
@@ -55,7 +59,7 @@
         this._stateMachine = StateMachine.create({
           initial: this.currentState,
           events: [
-            { name: 'passiveOpen', from: 'closed', to: 'listen'},
+            { name: 'listen', from: 'closed', to: 'listen'},
             { name: 'activeOpen', from: 'closed', to: 'synsent'},
             { name: 'syn', from: 'listen', to: 'synreceived'},
             { name: 'syn', from: 'synsent', to: 'synreceived'},
@@ -79,15 +83,33 @@
           }
         };
         this._stateMachine.onaftersynack = () => this.sendSegment({ ack: true });
-        this._stateMachine.onleavelisten = () => this.sendSegment({ syn: true, ack: true });
       }
 
       getDisplayState(state) {
         return this._stateMap[state];
       }
 
+      listen() {
+        this._stateMachine.listen();
+      }
+
       sendSegment(detail) {
-        this.dispatchEvent(new Event('send-segment'), { detail });
+        this.dispatchEvent(new CustomEvent('send-segment', { detail }));
+      }
+
+      _handlePacket(packet) {
+        console.log(`packet arrived at ${this.id}`, packet);
+        switch (true) {
+          case (packet.syn && packet.ack):
+            this._stateMachine.synack();
+            break;
+          case (packet.syn):
+            this._stateMachine.syn();
+            break;
+          case (packet.ack):
+            this._stateMachine.ack();
+            break;
+        }
       }
     }
 

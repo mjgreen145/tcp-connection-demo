@@ -10,8 +10,12 @@
         display: block;
       }
     </style>
-    <tcp-socket id="socket-1" on-send-segment='_onSegmentFromSocket1'></tcp-socket>
-    <tcp-socket id="socket-2" on-send-segment='_onSegmentFromSocket2'></tcp-socket>
+    <tcp-socket id="socket-1" on-send-segment='_onSegmentFromSocket1'
+      packet="{{socket1Packet}}">
+    </tcp-socket>
+    <tcp-socket id="socket-2" on-send-segment='_onSegmentFromSocket2'
+      packet="{{socket2Packet}}">
+    </tcp-socket>
   </template>
 
   <script>
@@ -25,15 +29,26 @@
           },
           socket2: {
             type: Object
+          },
+          socket1Packet: {
+            type: Object
+          },
+          socket2Packet: {
+            type: Object
           }
         };
       }
 
-      _onSegmentFromSocket1() {
-        console.log('blah1');
+      connectedCallback() {
+        super.connectedCallback();
+        this.$['socket-2'].listen();
       }
-      _onSegmentFromSocket2() {
-        console.log('blah2');
+
+      _onSegmentFromSocket1(event) {
+        setTimeout(() => { this.socket2Packet = event.detail }, 1000);
+      }
+      _onSegmentFromSocket2(event) {
+        setTimeout(() => { this.socket1Packet = event.detail }, 1000);
       }
     }
 
