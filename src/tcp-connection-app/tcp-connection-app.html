@@ -9,17 +9,35 @@
       :host {
         display: block;
       }
+      .sockets {
+        display: flex;
+        margin: 30px;
+        justify-content: space-between;
+      }
+      button {
+        display: block;
+        margin: 20px auto;
+      }
     </style>
-    <tcp-socket id="socket-1" on-send-segment='_onSegmentFromSocket1'
-      packet="{{socket1Packet}}">
-    </tcp-socket>
-    <tcp-socket id="socket-2" on-send-segment='_onSegmentFromSocket2'
-      packet="{{socket2Packet}}">
-    </tcp-socket>
+    <div class="sockets">
+      <div class="socket">
+        <tcp-socket id="socket-1" on-send-segment='_onSegmentFromSocket1'
+          packet="{{socket1Packet}}">
+        </tcp-socket>
+        <button on-click="_socket1Close">Close</button>
+        <button on-click="_socket1Open">Connect</button>
+      </div>
+      <div class="socket">
+        <tcp-socket id="socket-2" on-send-segment='_onSegmentFromSocket2'
+          packet="{{socket2Packet}}">
+        </tcp-socket>
+        <button on-click="_socket2Close">Close</button>
+        <button on-click="_socket2Listen">Listen</button>
+      </div>
+    </div>
   </template>
 
   <script>
-    /** @polymerElement */
     class TcpConnectionApp extends Polymer.Element {
       static get is() { return 'tcp-connection-app'; }
       static get properties() {
@@ -47,8 +65,25 @@
       _onSegmentFromSocket1(event) {
         setTimeout(() => { this.socket2Packet = event.detail }, 1000);
       }
+
       _onSegmentFromSocket2(event) {
         setTimeout(() => { this.socket1Packet = event.detail }, 1000);
+      }
+
+      _socket1Close() {
+        this.$['socket-1'].close();
+      }
+
+      _socket2Close() {
+        this.$['socket-2'].close();
+      }
+
+      _socket2Listen() {
+        this.$['socket-2'].listen();
+      }
+
+      _socket1Open() {
+        this.$['socket-1'].open();
       }
     }
 
