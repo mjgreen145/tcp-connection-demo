@@ -28,6 +28,11 @@
             type: String,
             value: 'closed'
           },
+          closable: {
+            type: Boolean,
+            value: false,
+            notify: true
+          },
           _stateMachine: {
             type: Object
           },
@@ -66,18 +71,39 @@
             { name: 'syn', from: 'listen', to: 'synreceived'},
             { name: 'syn', from: 'synsent', to: 'synreceived'},
             { name: 'synack', from: 'synsent', to: 'established'},
+            { name: 'reset', from: 'synreceived', to: 'listen'},
             { name: 'ack', from: 'synreceived', to: 'established'},
-            // { name: 'close', from: 'established', to: 'finwait1'},
+            { name: 'close', from: 'synreceived', to: 'finwait1'},
+            { name: 'close', from: 'established', to: 'finwait1'},
+            { name: 'fin', from: 'established', to: 'closewait'},
+            { name: 'fin', from: 'finwait1', to: 'closing'},
+            { name: 'ack', from: 'finwait1', to: 'finwait2'},
+            { name: 'fin', from: 'finwait2', to: 'timewait'},
+            { name: 'ack', from: 'closing', to: 'timewait'},
+            { name: 'close', from: 'closewait', to: 'lastack'},
+            { name: 'ack', from: 'lastack', to: 'closed'},
+            { name: 'close', from: 'timewait', to: 'closed'},
+            // no-ops / error handling
+            { name: 'syn', from: 'closed', to: 'closed'},
+            { name: 'synack', from: 'closed', to: 'closed'},
           ]
         });
         // Set new state
         this._stateMachine.onafterevent = (name, fromState, toState) => {
           this.currentState = toState;
+          const closableStates = [
+            'listen',
+            'synsent',
+            'synreceived',
+            'established',
+            'closewait'
+          ];
+          this.closable = closableStates.includes(toState);
         };
 
         // Set up state change events
         this._stateMachine.onafteropen = () => this.sendSegment({ syn: true });
-        this._stateMachine.onaftersyn = (event, from, to) => {
+        this._stateMachine.onaftersyn = (event, from) => {
           if (from === 'listen') {
             this.sendSegment({ syn: true, ack: true })
           }
@@ -85,7 +111,16 @@
             this.sendSegment({ ack: true })
           }
         };
+        this._stateMachine.onleavesynsent = (event) => {
+          if (event === 'close') {
+            this.sendSegment({ reset: true });
+          }
+        }
         this._stateMachine.onaftersynack = () => this.sendSegment({ ack: true });
+        this._stateMachine.onenterfinwait1 = () => this.sendSegment({ fin: true });
+        this._stateMachine.onafterfin = () => this.sendSegment({ ack: true });
+        this._stateMachine.onleaveclosewait = () => this.sendSegment({ fin: true });
+        this._stateMachine.onentertimewait = this._timewait.bind(this);
       }
 
       getDisplayState(state) {
@@ -108,6 +143,12 @@
         this.dispatchEvent(new CustomEvent('send-segment', { detail }));
       }
 
+      _timewait() {
+        setTimeout(() => {
+          this._stateMachine.close();
+        }, 5000);
+      }
+
       _handlePacket(packet) {
         console.log(`packet arrived at ${this.id}`, packet);
         switch (true) {
@@ -120,6 +161,10 @@
           case (packet.ack):
             this._stateMachine.ack();
             break;
+          case (packet.fin):
+            this._stateMachine.fin();
+          case (packet.reset):
+            this._stateMachine.reset();
         }
       }
     }

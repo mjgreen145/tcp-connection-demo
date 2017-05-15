@@ -8,6 +8,8 @@
     <style>
       :host {
         display: block;
+        max-width: 960px;
+        margin: 0 auto;
       }
       .sockets {
         display: flex;
@@ -16,23 +18,51 @@
       }
       button {
         display: block;
+        padding: 0 16px;
+        line-height: 36px;
         margin: 20px auto;
+        border: none;
+        border-radius: 3px;
+        text-transform: uppercase;
+        font-size: 16px;
+        color: white;
+        min-width: 120px;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+        cursor: pointer;
+      }
+      button:active {
+        outline: none;
+        box-shadow: 0 5px 6px rgba(0,0,0,0.16), 0 5px 6px rgba(0,0,0,0.23);
+      }
+      button:focus {
+        outline: none;
+      }
+      button.green {
+        background-color: #4caf50;
+      }
+      button.red {
+        background-color: #ef5350;
+      }
+      button[disabled] {
+        background-color: #dddddd;
+        box-shadow: none;
+        cursor: auto;
       }
     </style>
     <div class="sockets">
       <div class="socket">
         <tcp-socket id="socket-1" on-send-segment='_onSegmentFromSocket1'
-          packet="{{socket1Packet}}">
+          packet="[[socket1Packet]]" closable="{{socket1Closable}}">
         </tcp-socket>
-        <button on-click="_socket1Close">Close</button>
-        <button on-click="_socket1Open">Connect</button>
+        <button class="green" on-click="_socket1Open">Connect</button>
+        <button class="red" on-click="_socket1Close" disabled="[[!socket1Closable]]">Close</button>
       </div>
       <div class="socket">
         <tcp-socket id="socket-2" on-send-segment='_onSegmentFromSocket2'
-          packet="{{socket2Packet}}">
+          packet="[[socket2Packet]]" closable="{{socket2Closable}}">
         </tcp-socket>
-        <button on-click="_socket2Close">Close</button>
-        <button on-click="_socket2Listen">Listen</button>
+        <button class="green" on-click="_socket2Listen">Listen</button>
+        <button class="red" on-click="_socket2Close" disabled="[[!socket2Closable]]">Close</button>
       </div>
     </div>
   </template>
