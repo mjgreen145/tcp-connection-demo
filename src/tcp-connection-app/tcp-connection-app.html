@@ -52,16 +52,16 @@
     <div class="sockets">
       <div class="socket">
         <tcp-socket id="socket-1" on-send-segment='_onSegmentFromSocket1'
-          packet="[[socket1Packet]]" closable="{{socket1Closable}}">
+          packet="[[socket1Packet]]" closable="{{socket1Closable}}" can-be-opened="{{canBeOpened1}}">
         </tcp-socket>
-        <button class="green" on-click="_socket1Open">Connect</button>
+        <button class="green" on-click="_socket1Open" disabled="[[!canBeOpened1]]">Connect</button>
         <button class="red" on-click="_socket1Close" disabled="[[!socket1Closable]]">Close</button>
       </div>
       <div class="socket">
         <tcp-socket id="socket-2" on-send-segment='_onSegmentFromSocket2'
-          packet="[[socket2Packet]]" closable="{{socket2Closable}}">
+          packet="[[socket2Packet]]" closable="{{socket2Closable}}" can-be-opened="{{canBeOpened2}}">
         </tcp-socket>
-        <button class="green" on-click="_socket2Listen">Listen</button>
+        <button class="green" on-click="_socket2Listen" disabled="[[!canBeOpened2]]">Listen</button>
         <button class="red" on-click="_socket2Close" disabled="[[!socket2Closable]]">Close</button>
       </div>
     </div>

@@ -33,6 +33,11 @@
             value: false,
             notify: true
           },
+          canBeOpened: {
+            type: Boolean,
+            value: true,
+            notify: true
+          },
           _stateMachine: {
             type: Object
           },
@@ -86,41 +91,43 @@
             // no-ops / error handling
             { name: 'syn', from: 'closed', to: 'closed'},
             { name: 'synack', from: 'closed', to: 'closed'},
-          ]
-        });
-        // Set new state
-        this._stateMachine.onafterevent = (name, fromState, toState) => {
-          this.currentState = toState;
-          const closableStates = [
-            'listen',
-            'synsent',
-            'synreceived',
-            'established',
-            'closewait'
-          ];
-          this.closable = closableStates.includes(toState);
-        };
+          ],
+          callbacks: {
+            onafterevent: (name, fromState, toState) => {
+              this.currentState = toState;
+              const closableStates = [
+                'listen',
+                'synsent',
+                'synreceived',
+                'established',
+                'closewait'
+              ];
+              this.closable = closableStates.includes(toState);
+              this.canBeOpened = toState === 'closed';
+            },
 
-        // Set up state change events
-        this._stateMachine.onafteropen = () => this.sendSegment({ syn: true });
-        this._stateMachine.onaftersyn = (event, from) => {
-          if (from === 'listen') {
-            this.sendSegment({ syn: true, ack: true })
+            // Set up state change events
+            onafteropen: () => this.sendSegment({ syn: true }),
+            onaftersyn: (event, from) => {
+              if (from === 'listen') {
+                this.sendSegment({ syn: true, ack: true });
+              }
+              if (from === 'synsent') { // Simultaneous Open
+                this.sendSegment({ ack: true });
+              }
+            },
+            onleavesynsent: (event) => {
+              if (event === 'close') {
+                this.sendSegment({ reset: true });
+              }
+            },
+            onaftersynack: () => this.sendSegment({ ack: true }),
+            onenterfinwait1: () => this.sendSegment({ fin: true }),
+            onafterfin: () => this.sendSegment({ ack: true }),
+            onleaveclosewait: () => this.sendSegment({ fin: true }),
+            onentertimewait: this._timewait.bind(this),
           }
-          if (from === 'synsent') { // Simultaneous Open
-            this.sendSegment({ ack: true })
-          }
-        };
-        this._stateMachine.onleavesynsent = (event) => {
-          if (event === 'close') {
-            this.sendSegment({ reset: true });
-          }
-        }
-        this._stateMachine.onaftersynack = () => this.sendSegment({ ack: true });
-        this._stateMachine.onenterfinwait1 = () => this.sendSegment({ fin: true });
-        this._stateMachine.onafterfin = () => this.sendSegment({ ack: true });
-        this._stateMachine.onleaveclosewait = () => this.sendSegment({ fin: true });
-        this._stateMachine.onentertimewait = this._timewait.bind(this);
+        });
       }
 
       getDisplayState(state) {
@@ -163,8 +170,10 @@
             break;
           case (packet.fin):
             this._stateMachine.fin();
+            break;
           case (packet.reset):
             this._stateMachine.reset();
+            break;
         }
       }
     }
