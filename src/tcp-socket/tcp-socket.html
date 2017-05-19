@@ -11,10 +11,16 @@
       .socket {
         border: 1px solid black;
         display: inline-block;
+        width: 120px;
+        text-align: center;
+        border-radius: 3px;
+        padding: 15px;
+        line-height: 25px;
       }
     </style>
     <div class="socket">
-      State is [[ getDisplayState(currentState) ]]
+      State is <br>
+      <span class="state">[[ getDisplayState(currentState) ]]</span>
     </div>
   </template>
 
@@ -91,6 +97,7 @@
             // no-ops / error handling
             { name: 'syn', from: 'closed', to: 'closed'},
             { name: 'synack', from: 'closed', to: 'closed'},
+            { name: 'ack', from: 'listen', to: 'listen'},
           ],
           callbacks: {
             onafterevent: (name, fromState, toState) => {
